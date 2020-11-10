@@ -89,7 +89,7 @@ if __name__ == "__main__":
     for d in dat:
         d = str(d).strip()
         if d.startswith('#') or d.startswith('New'): continue
-        arr = [nfloat(x) for x in filter(None, d.split('|'))]
+        arr = [nfloat(x) for x in [_f for _f in d.split('|') if _f]]
         if len(arr)==0: continue
         
         # Process the file, E[X], V[X], SUM
@@ -113,21 +113,21 @@ if __name__ == "__main__":
         last = arr[0]
         
     # Process output to nicely looking graph
-    x = np.array(range(0, n))
+    x = np.array(list(range(0, n)))
     
     # hypothesis tests results
-    hypo_0 = len(filter(lambda x: x >= 0.05, pv[0]))
-    hypo_4 = len(filter(lambda x: x >= 0.05, pv[4]))
+    hypo_0 = len([x for x in pv[0] if x >= 0.05])
+    hypo_4 = len([x for x in pv[4] if x >= 0.05])
     
-    print "Statistical data"
-    print "Mean EX %03.4f; Median EX %03.4f; V[Mean] %03.4f; Mean VX %03.4f; Median VX %03.4f;" % (np.mean(ex), np.median(ex), np.var(ex), np.mean(vx), np.median(vx))
+    print("Statistical data")
+    print("Mean EX %03.4f; Median EX %03.4f; V[Mean] %03.4f; Mean VX %03.4f; Median VX %03.4f;" % (np.mean(ex), np.median(ex), np.var(ex), np.mean(vx), np.median(vx)))
     
     
-    print "Hypothesis testing result"
-    print "Poisson: %01.5f; median p-value: %01.8f; median chi-square: %01.8f" % (hypo_0/float(len(pk[0])), np.median(pv[0]), np.median(cv[0]))
-    print "NBinom:  %01.5f; median p-value: %01.8f; median chi-square: %01.8f" % (hypo_4/float(len(pk[4])), np.median(pv[4]), np.median(cv[4]))
+    print("Hypothesis testing result")
+    print("Poisson: %01.5f; median p-value: %01.8f; median chi-square: %01.8f" % (hypo_0/float(len(pk[0])), np.median(pv[0]), np.median(cv[0])))
+    print("NBinom:  %01.5f; median p-value: %01.8f; median chi-square: %01.8f" % (hypo_4/float(len(pk[4])), np.median(pv[4]), np.median(cv[4])))
     
-    print "%01.3f & %01.3f & %03.4f & %03.4f & %03.4f" % ((1 - hypo_0/float(len(pk[0]))) * 100, (1 - hypo_4/float(len(pk[4]))) * 100, np.mean(ex), np.var(ex), np.mean(vx))
+    print("%01.3f & %01.3f & %03.4f & %03.4f & %03.4f" % ((1 - hypo_0/float(len(pk[0]))) * 100, (1 - hypo_4/float(len(pk[4]))) * 100, np.mean(ex), np.var(ex), np.mean(vx)))
     
     # e,x
     ex_np = np.array(ex)

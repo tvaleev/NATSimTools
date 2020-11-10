@@ -12,13 +12,7 @@ import copy
 import time
 import argparse
 from dateutil import parser as dparser
-import calendar
 
-from scipy.stats import binom
-from scipy.stats import nbinom
-from scipy.stats import norm
-from scipy.stats import poisson
-from scipy.stats import chisquare
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -29,19 +23,6 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='NAT data processor.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-o','--output',    help='Output file name from finder', required=False, default='graph.txt')
-    parser.add_argument('-t','--space',     help='Time in ms to wait between packet send', required=False, default=10, type=int)
-    parser.add_argument('-l','--lmbd_start',help='On which lambda to start', required=False, default=-1, type=float)
-    parser.add_argument('-s','--strategy',  help='Strategy to use (poisson, i2j, fibo, their, ij, binom, simple)', required=False, default='poisson')
-    parser.add_argument('-r','--rounds',    help='Simulation rounds', required=False, type=int, default=1000)
-    parser.add_argument('-e','--errors',    help='Maximum steps by algorithm', required=False, type=int, default=1000)
-    parser.add_argument('-d','--dot',       help='Graphviz dot illustration', required=False, type=int, default=0)
-    parser.add_argument('-a','--ascii',     help='Ascii illustration', required=False, type=int, default=0)
-    parser.add_argument('-n','--nfdump',    help='NFdump file', required=False, default=None)
-    parser.add_argument('-m','--nfdump_sorted',help='NFdump sorted file', required=False, default=None)
-    parser.add_argument('-f','--filter',    help='NFdump filter', required=False, default=None)
-    parser.add_argument('-g','--hostnet',   help='NFdump host address', required=False, default="147.250.")
-    parser.add_argument('--lmbd',           help='Default Poisson lambda for simulations', required=False, type=float, default=0.1)
     parser.add_argument('--mean',           help='Graph main', required=False, default=False, action='store_true')
     parser.add_argument('file', action="store", nargs='+')
     args = parser.parse_args()
@@ -56,9 +37,12 @@ if __name__ == "__main__":
         dat   = fh.readlines()
         
         k, s, m = [], [], []
+        strategy_name = ""
         for d in dat:
             d = str(d).strip()
-            if d.startswith('#') or d.startswith('New'): continue
+            if d.startswith('#') or d.startswith('New'):
+              strategy_name = d.split()[5].split("=")[1]
+              continue
             
             arr = [float(x) for x in filter(None, d.split('|'))]
             if len(arr)==0: continue
@@ -73,11 +57,8 @@ if __name__ == "__main__":
         x = np.array(k)
         y = np.array(m if args.mean else s)
         
-        tt = plt.plot(x, y, styles[i], label=chr(ord("A")+i))
-    #plt.plot(xp1, pxp1, '--')
-    #plt.plot(xp2, pxp2, 'g-')
-    #plt.plot(xp3, pxp3, 'k-.')
-    
+        tt = plt.plot(x, y, styles[i], label=strategy_name)
+   
     if args.mean: plt.legend(loc=1)
     else:         plt.legend(loc=3)
     
@@ -89,10 +70,4 @@ if __name__ == "__main__":
     plt.xlabel('$\lambda$')
     plt.ylabel('Mean step success' if args.mean else 'success rate [%]') #,rotation='horizontal')
     plt.grid(True)
-    plt.show()
-        
-        
-        
-        
-        
-        
+    plt.show()       

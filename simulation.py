@@ -96,7 +96,7 @@ def hashcode(s):
     Simple hashcode implementation for strings and integers.
     '''
     h = 0
-    if isinstance(s, ( int, long ) ): return s
+    if isinstance(s, int ): return s
     for c in s:
         h = (31 * h + ord(c)) & 0xFFFFFFFF
     return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
@@ -212,7 +212,7 @@ class SymmetricNat(Nat):
     
     def init(self, params=None):
         self.allocations = {}
-        self.pool = range(0, 65536)
+        self.pool = list(range(1025, 65536))
         self.poolLen = len(self.pool)
         self.allocatedPorts = {}
         self.expireHeap = []
@@ -264,7 +264,7 @@ class SymmetricNat(Nat):
             
         # check if pool is exhausted - all ports are allocated currently
         if tries >= self.poolLen or port==-1:
-            print "Port pool exhausted"
+            print("Port pool exhausted")
             raise Exception("Port pool exhausted")
         # reflect to internal NAT state - move iterator
         if peek==False:
@@ -403,7 +403,7 @@ class TheirStragegy(Strategy):
         if party==1: return (step,self.delta[1])
 
 class IJStragegy(Strategy):
-    startPos=[0,0]
+    startPos=[1025,1025]
     b = []
     def init(self, params=None):
         pass
@@ -424,14 +424,14 @@ class IJStragegy(Strategy):
         return self.startPos
         
     def next(self, party, step):
-        if party==0: return (0, int(self.startPos[0]+self.b[step]))
-        if party==1: return (0, int(self.startPos[1]+self.b[step]))
+        if party==0: return (1025, int(self.startPos[0]+self.b[step]))
+        if party==1: return (1025, int(self.startPos[1]+self.b[step]))
     
 class I2JStragegy(Strategy):
     '''
     Baby step, giant step strategy for low noise links. Works 100 % if lmbd*time is low.
     '''
-    startPos=[0,0]
+    startPos=[1025,1025]
     def init(self, params=None):
         pass
     def silent(self,  time1, time2, lmbd):
@@ -446,8 +446,12 @@ class I2JStragegy(Strategy):
         c = 0
         if lmbd >=  0.035: c=-10000.0*lmbd*lmbd + 950.0*lmbd - 21.0 
         if lmbd >= 0.05:   c=2
-        
-        self.startPos=[int(0 * lmbd * time1), int(0 * lmbd * time2)]
+       
+        # [tvaleev] why always zero? 
+        #self.startPos=[int(0 * lmbd * time1), int(0 * lmbd * time2)]
+
+        #print("Start pos----")
+        #print(self.startPos)
         #self.startPos=[NatSimulation.poisson(lmbd, time1), NatSimulation.poisson(lmbd, time2)]
         return self.startPos
         
@@ -456,8 +460,8 @@ class I2JStragegy(Strategy):
         #if party==0: return (0, int(self.startPos[0]+random.randint(1,3)*step )) #int(self.startPos[0]+step-150*(step/100)))
         #if party==1: return (0, int(self.startPos[0]+random.randint(1,5)*step )) #int(self.startPos[1]+2*step-230*(step/100)))
         
-        if party==0: return (0, int(self.startPos[0]+step )) #int(self.startPos[0]+step-150*(step/100)))
-        if party==1: return (0, int(self.startPos[0]+2*step )) #int(self.startPos[1]+2*step-230*(step/100)))
+        if party==0: return (1025, int(self.startPos[0]+step )) #int(self.startPos[0]+step-150*(step/100)))
+        if party==1: return (1025, int(self.startPos[0]+2*step )) #int(self.startPos[1]+2*step-230*(step/100)))
 
 class SimpleStrategy(Strategy):
     '''
@@ -465,7 +469,7 @@ class SimpleStrategy(Strategy):
     If a process of new connections on NAT is Poisson process then the following formula holds (from simulation):
     E[X] = 1 + lambda * time
     '''
-    startPos=[0,0]
+    startPos=[1025,1025]
     b = []
     ln = 0
     def init(self, params=None):
@@ -480,13 +484,13 @@ class SimpleStrategy(Strategy):
         self.ln = len(self.b)
         
     def silent(self,  time1, time2, lmbd):
-        self.startPos=[int(lmbd * time1), int(lmbd * time2)]
+        self.startPos=[int(lmbd * time1 + 1025), int(lmbd * time2 + 1025)]
         #self.startPos=[NatSimulation.poisson(lmbd, time1), NatSimulation.poisson(lmbd, time2)]
         return self.startPos
         
     def next(self, party, step):
-        if party==0: return (0, int(round(self.startPos[0]+self.b[min(step, self.ln-1)])))
-        if party==1: return (0, int(round(self.startPos[1]+self.b[min(step, self.ln-1)])))
+        if party==0: return (1025, int(round(self.startPos[0]+self.b[min(step, self.ln-1)])))
+        if party==1: return (1025, int(round(self.startPos[1]+self.b[min(step, self.ln-1)])))
         
 class FiboStrategy(Strategy):
     '''
@@ -596,7 +600,7 @@ class PoissonStrategy(Strategy):
     For particular setting (lambda, time), coefficient is needed to be found. If coeficient
     is optimized, this strategy performs very well. 
     '''
-    startPos=[0,0]
+    startPos=[1025,1025]
     nats = None
     sim  = None
     lmbd = 0.1
@@ -675,14 +679,14 @@ class PoissonStrategy(Strategy):
         
     def silent(self,  time1, time2, lmbd):
         self.lmbd = lmbd
-        self.startPos=[int(lmbd * time1), int(lmbd * time2)] # expected value
+        self.startPos=[int(lmbd * time1 + 1025), int(lmbd * time2 + 1025)] # expected value
         self.gen()
         #self.startPos=[NatSimulation.poisson(lmbd, time1), NatSimulation.poisson(lmbd, time2)]        
         return self.startPos
     
     def next(self, party, step):
         #return (0, int(self.startPos[party] + NatSimulation.poisson(self.lmbd, 10 * (1+step*1.77)    )))
-        return (0, int(self.startPos[party] + self.b[party][min(step, len(self.b[party])-1)]))
+        return (1025, int(self.startPos[party] + self.b[party][min(step, len(self.b[party])-1)]))
         
         #self.startPos[party] += 1+NatSimulation.poisson(self.lmbd, 10)#*(1+step*0.77))
         #return (0, int(self.startPos[party]))
@@ -693,25 +697,25 @@ def getStrategy(desc, verbose=0):
     '''
     strategy = PoissonStrategy()
     if desc == 'i2j':
-        if verbose>0: print "I2J Strategy: "
+        if verbose>0: print("I2J Strategy: ")
         strategy = I2JStragegy()
     elif desc == 'ij':
-        if verbose>0: print "IJ strategy"
+        if verbose>0: print("IJ strategy")
         strategy = IJStragegy()
     elif desc == 'fibo':
-        if verbose>0: print "Fibonacci strategy"
+        if verbose>0: print("Fibonacci strategy")
         strategy = FiboStrategy()
     elif desc == 'their':
-        if verbose>0: print "Their strategy"
+        if verbose>0: print("Their strategy")
         strategy = TheirStragegy()
     elif desc == 'poisson':
-        if verbose>0: print "Poisson strategy"    
+        if verbose>0: print("Poisson strategy")    
         strategy  = PoissonStrategy()
     elif desc == 'binom':
-        if verbose>0: print "Binomial strategy"    
+        if verbose>0: print("Binomial strategy")    
         strategy  = BinomialStrategy()
     elif desc == 'simple':
-        if verbose>0: print "Simple strategy"    
+        if verbose>0: print("Simple strategy")    
         strategy  = SimpleStrategy()
     
     return strategy
@@ -753,12 +757,12 @@ class NfdumpSorter(NfdumpAbstract):
         if self.once == True: raise Exception('Generator was not de-initialized, may be still running...')
         
         cmdLine = 'nfdump -q -r "%s" -o "fmt:%%ts;%%td;%%pr;%%sa;%%sp;%%da;%%dp" "%s"' % (filename, filt if filt!=None else "")
-        print "nfdump command line used: %s" % cmdLine
+        print("nfdump command line used: %s" % cmdLine)
         
         self.once = True
         self.tout = activeTimeout
         self.proc = subprocess.Popen(cmdLine, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        print "Data loaded, going to process output..."
+        print("Data loaded, going to process output...")
     
     def __enter__(self):
         return self
@@ -1016,7 +1020,7 @@ class NatSimulation(object):
         
             # increment the event counter
             N = N + 1
-            print "New event will occur: " + str(t) + ("; now events: %02d" % N) 
+            print("New event will occur: " + str(t) + ("; now events: %02d" % N)) 
         
         return N
   
@@ -1059,21 +1063,21 @@ class NatSimulation(object):
             
             # check if we are performing worse than before
             if maxp >= maxp_acc and maxp > res[0] and abs(maxp-res[0]) >= epsdiff:
-                print "; We are getting worse...; "
+                print("; We are getting worse...; ")
                 bpoint = curc
                 break
             # too good solution
             if maxp >= 0.99: break
             
             curc += baseStep    # increment current coefficient in strategy to the next round        
-        print probs
+        print(probs)
         
         # Coefficient binary finding, maximum should be somewhere in the middle
         #print self.coefFinderInterval(natA, natB, strategy, bpoint-3*baseStep, bpoint, 0)
         
         # recursive call on this function - try finer step
         if maxp > 0.99 or depth >= 3:
-            print "Ending recursion; max=%03.4f bp=%03.4f" % (maxp, maxcur)
+            print("Ending recursion; max=%03.4f bp=%03.4f" % (maxp, maxcur))
             return (maxp, curc, resm[2] if resm != None else '0') 
         else:
             return self.coefFinder(natA, natB, strategy, baseStep/10.0, maxcur-2*baseStep, maxcur+2*baseStep, epsdiff/1.0, maxp, depth+1)
@@ -1108,7 +1112,7 @@ class NatSimulation(object):
             sys.stdout.write("c+1 [%02.03f, %02.03f] curc=%03.4f; " % (cl, cr, strategy.coef))
             res_cp = self.simulation(natA, natB, strategy)
             
-            print ""
+            print("")
             sys.stdout.flush()
             
             # decision which path to take
@@ -1119,24 +1123,24 @@ class NatSimulation(object):
             elif res_c[0] >= 0.99:
                 return cc
             elif res_cm[0] <= res_c[0] and res_c[0] >= res_cp[0]: # middle is peak; could return already but we might obtain better peak by "zooming"
-                print "shrinking interval"
+                print("shrinking interval")
                 cl = cl + (cr-cl) / 4.0
                 cr = cr - (cr-cl) / 4.0
             elif res_cm[0] >= res_c[0] and res_c[0] <= res_cp[0]: # middle is low-peak;
                 if res_cm[0] >= res_cp[0]:   # if left side is bigger
-                    print "lowpeak, going left..."
+                    print("lowpeak, going left...")
                     cr = cc-step
                 else:                       # right side is bigger
-                    print "lowpeak, going right..." 
+                    print("lowpeak, going right...") 
                     cl = cc+step
             elif res_cm[0] >= res_c[0]:
-                print "going left..."
+                print("going left...")
                 cr = cc-step
             elif res_cp[0] >= res_c[0]:
-                print "going right..."
+                print("going right...")
                 cl = cc+step
             else:
-                print "dafuq?"
+                print("dafuq?")
                 return cc   
         return cc
     
@@ -1257,7 +1261,7 @@ class NatSimulation(object):
                 nowFreePorts = natA.trulyFreePorts(startUtc)
                 newConn      = lastFree - nowFreePorts
                 lastFree     = nowFreePorts
-                print "Hah, extPort=%s, free=%s, newCon=%s, time=%s, srchome=%s\n" % (extPort, nowFreePorts, newConn, startUtc, fromHome)
+                print("Hah, extPort=%s, free=%s, newCon=%s, time=%s, srchome=%s\n" % (extPort, nowFreePorts, newConn, startUtc, fromHome))
             
             if curTestSize<sampleSize: 
                 continue
@@ -1312,7 +1316,7 @@ class NatSimulation(object):
             nfdumpGenerator = nfdumpObj.generator()
         
         # generates samples of NAT process w.r.t. new connections.
-        print "Starting sampling; sampleSize=%04d; sampleSkip=%04d; maxBlock=%04d; T=%03d" % (sampleSize, sampleSkip, maxBlock, self.portScanInterval)
+        print("Starting sampling; sampleSize=%04d; sampleSkip=%04d; maxBlock=%04d; T=%03d" % (sampleSize, sampleSkip, maxBlock, self.portScanInterval))
         nfgen = self.nfdumpSampleGenerator(natA, nfdumpGenerator, homeNet, self.portScanInterval, 
                                            sampleSize, sampleSkip, 0, maxBlock, activeTimeout)
         
@@ -1337,20 +1341,20 @@ class NatSimulation(object):
             ssum, ex, var, stdev = self.calcPortDistribInfo(distrib, sampleSizeR)
             files = [('distrib/nfdump_' + fileDesc + ("_%04d" % curBlock) + tmpf) for tmpf in ['.pdf', '.png', '.svg']]
                         
-            print "Sampling done... max=%d, sampleSize=%d target=%d sum=%d" % (maxE, curTestSize, sampleSize, sum(distrib))
+            print("Sampling done... max=%d, sampleSize=%d target=%d sum=%d" % (maxE, curTestSize, sampleSize, sum(distrib)))
 
             # Negative binomial try - wise binning disabled.
             (chi, pval, tmp_n, tmp_p, m2) = self.goodMatchNegativeBinomial(ex, var, distrib, maxE, sampleSizeR, False, wiseBinning=False)
-            print "Chi-Squared test on match with NB(%04d, %04.4f): Chi: %04.4f, p-value=%01.25f; alpha=0.05; hypothesis %s" % \
-                (tmp_n, tmp_p, chi, pval, "is REJECTED" if pval < 0.05 else "holds")
+            print("Chi-Squared test on match with NB(%04d, %04.4f): Chi: %04.4f, p-value=%01.25f; alpha=0.05; hypothesis %s" % \
+                (tmp_n, tmp_p, chi, pval, "is REJECTED" if pval < 0.05 else "holds"))
             
-            print "\nBlock=%04d, Distribution: " % curBlock, distrib 
+            print("\nBlock=%04d, Distribution: " % curBlock, distrib) 
             sres = self.histAndStatisticsPortDistrib(distrib, sampleSizeR, maxE, files, drawHist=drawHist)
             statRes.append(sres)
             statAccum.append(sres['distrib'])
             statDesc.append((ex,var))
             
-            print "=" * 180
+            print("=" * 180)
             
             #
             # Data output, each line = one distrib
@@ -1406,9 +1410,9 @@ class NatSimulation(object):
                     chisq[i].append(t['chi'])
                     chisqK[i].append(k)
         
-        print "Hypothesis tests results (total=%d) " % curBlock, hypotheses
-        print "Median p-value: ", [np.median(s) for s in pvals]
-        print "Median chi-squared value: ", [np.median(s) for s in chisq]
+        print("Hypothesis tests results (total=%d) " % curBlock, hypotheses)
+        print("Median p-value: ", [np.median(s) for s in pvals])
+        print("Median chi-squared value: ", [np.median(s) for s in chisq])
         return {'n': curBlock,      'h': hypotheses, 
                 'pv': pvals,        'pk': pvalsK, 
                 'cv': chisq,        'ck': chisqK, 
@@ -1462,7 +1466,7 @@ class NatSimulation(object):
             if foundSomething: break
         
         if not self.compact:
-            print "TotalLags [%02d %02d]" % (totalLagA[0], totalLagA[1])
+            print("TotalLags [%02d %02d]" % (totalLagA[0], totalLagA[1]))
         
         # OK is there any intersection in both sets?
         res = list(scanA[0].intersection(scanA[1]))
@@ -1483,7 +1487,7 @@ class NatSimulation(object):
         # Algorithm failed to establish a new connection
         if (len(res) == 0): 
             if not self.compact:
-                print "Algorithm failed, no intersecting points"
+                print("Algorithm failed, no intersecting points")
             else:
                 sys.stdout.write('.')
                 sys.stdout.flush()
@@ -1493,7 +1497,7 @@ class NatSimulation(object):
             return ret
         
         if not self.compact: 
-            print "RES: ", res, "i=%02d" % mapA[0][res[0][0]], "; j=%02d" % mapA[1][res[0][1]]
+            print("RES: ", res, "i=%02d" % mapA[0][res[0][0]], "; j=%02d" % mapA[1][res[0][1]])
         else:
             sys.stdout.write('X')
             sys.stdout.flush()
@@ -1526,7 +1530,7 @@ class NatSimulation(object):
             curSilentB = self.silentPeriodBase + self.poisson(self.silentPeriodlmbd, 1)
             
             if not self.compact:
-                print "\n##%03d. Current silent period time: [%03.3f, %03.3f]" % (sn, curSilentA, curSilentB) 
+                print("\n##%03d. Current silent period time: [%03.3f, %03.3f]" % (sn, curSilentA, curSilentB)) 
             
             # generate new TCP connections for silent period on both sides, same lambda.
             kA = self.poisson(self.lmbd, curSilentA)
@@ -1565,15 +1569,15 @@ class NatSimulation(object):
             successAcc[1] += mapA[1][res[0][1]]
         
         simEnd = getTime()
-        simTotal = simEnd - simStart    
-        
-        P.grid(True)
-        P.Figure()
-        P.hist(resM, max(resM), normed=0, histtype='bar')
-        graph(plt)
+        simTotal = simEnd - simStart
+
+        #P.grid(True)
+        #P.Figure()
+        #P.hist(resM, max(resM), density=0, histtype='bar')
+        #graph(plt)
             
         # Report results after simulation is done
-        print "\nSuccess count: %02.3f ; cnt=%03d; lmbd=%01.3f; scanInterval=%04d ms; base sleep=%04d; average steps: %04.3f %04.3f; time elapsed=%04.3f s" % \
+        print("\nSuccess count: %02.3f ; cnt=%03d; lmbd=%01.3f; scanInterval=%04d ms; base sleep=%04d; average steps: %04.3f %04.3f; time elapsed=%04.3f s" % \
             (successCnt / realRounds    if realRounds > 0 else 0, 
              successCnt, 
              self.lmbd, 
@@ -1581,7 +1585,7 @@ class NatSimulation(object):
              self.silentPeriodBase,
              successAcc[0] / successCnt if successCnt > 0 else 0,
              successAcc[1] / successCnt if successCnt > 0 else 0,
-             simTotal/1000.0)
+             simTotal/1000.0))
         
         return (successCnt / realRounds    if realRounds > 0 else 0, 
                 successCnt, 
@@ -1683,7 +1687,7 @@ class NatSimulation(object):
             strategyB.silent(0,                     int(curSilentA*T), lmbd[0])
             
             if not self.compact:
-                print "\n##%03d. C. s. period: [%03.3f, %03.3f]~[%04d, %04d]; lmbd est [%03.3f, %03.3f] s.p. est. [%03.3f, %03.3f] len [%d, %d] lmbdAvg [%03.3f, %03.3f]" \
+                print("\n##%03d. C. s. period: [%03.3f, %03.3f]~[%04d, %04d]; lmbd est [%03.3f, %03.3f] s.p. est. [%03.3f, %03.3f] len [%d, %d] lmbdAvg [%03.3f, %03.3f]" \
                     % (sn, 
                        curSilentA*T, curSilentB*T, 
                        kA, kB, 
@@ -1691,8 +1695,8 @@ class NatSimulation(object):
                        strategyA.startPos[0], strategyB.startPos[1], 
                        len(natSamples[0]), len(natSamples[1]),
                        lmbdAvg[0], lmbdAvg[1]
-                       )
-                print strategyA
+                       ))
+                print(strategyA)
             
             # do the simulation round 
             (res, portsA, mapA, scanA, totalLagA, stepMap) = self.simulationCore(natSamples, strategies, nats, stopOnFirstMatch)
@@ -1720,7 +1724,7 @@ class NatSimulation(object):
         nfdumpObj.deinit()
 
         # Report results after simulation is done
-        print "\nSuccess count: %02.3f ; cnt=%03d; lmbd=%01.3f; scanInterval=%04d ms; base sleep=%04d; average steps: %04.3f %04.3f; time elapsed=%04.3f s" % \
+        print("\nSuccess count: %02.3f ; cnt=%03d; lmbd=%01.3f; scanInterval=%04d ms; base sleep=%04d; average steps: %04.3f %04.3f; time elapsed=%04.3f s" % \
             (successCnt / realRounds    if realRounds > 0 else 0, 
              successCnt, 
              self.lmbd, 
@@ -1728,9 +1732,9 @@ class NatSimulation(object):
              self.silentPeriodBase,
              successAcc[0] / successCnt if successCnt > 0 else 0,
              successAcc[1] / successCnt if successCnt > 0 else 0,
-             simTotal/1000.0)
+             simTotal/1000.0))
             
-        print "Lambda mean(mean(lmbd)) = ", np.mean(samplesMean), "; median(mean(lmbd)) = ", np.median(samplesMean), "; var(mean(lmbd)) = ", np.var(samplesMean) 
+        print("Lambda mean(mean(lmbd)) = ", np.mean(samplesMean), "; median(mean(lmbd)) = ", np.median(samplesMean), "; var(mean(lmbd)) = ", np.var(samplesMean)) 
         return (successCnt / realRounds    if realRounds > 0 else 0, 
                 successCnt, 
                 successAcc[0] / successCnt if successCnt > 0 else 0,
@@ -1770,7 +1774,7 @@ class NatSimulation(object):
              
         sys.stdout.write("\n")
         sys.stdout.flush()
-        print "Hits: ", cnt
+        print("Hits: ", cnt)
     
     def generateDot(self, portsA, portsB, scanA, scanB, mapA, res):
         '''
@@ -1843,7 +1847,7 @@ class NatSimulation(object):
         f.close()
         
         # generate SVG file
-        print "GraphViz output: ", subprocess.Popen('neato -Tpng < dotfile.dot > dotfile.png', shell=True).communicate()[0]
+        print("GraphViz output: ", subprocess.Popen('neato -Tpng < dotfile.dot > dotfile.png', shell=True).communicate()[0])
     
     def poolExhaustionNat(self, natA, timeout):
         return self.poolExhaustion(timeout, natA.poolLen, self.lmbd)
@@ -1871,8 +1875,8 @@ class NatSimulation(object):
             # increment the event counter
             N = N + 1
             #print "New event will occur: " + str(t) + ("; now events: %02d" % N)
-        print "Port pool will be exhausted in %05.3f ms = %05.3f s = %05.3f min = %05.3f h" % (t, t/1000.0, t/1000.0/60, t/1000.0/60/60)
-        print "P(X > portPoolSize) = %02.18f where X~Poisson(timeout * lamda = %d * %04.4f)" % (1.0-poisson.cdf(poolsize, float(lmbd) * timeout), timeout, lmbd)
+        print("Port pool will be exhausted in %05.3f ms = %05.3f s = %05.3f min = %05.3f h" % (t, t/1000.0, t/1000.0/60, t/1000.0/60/60))
+        print("P(X > portPoolSize) = %02.18f where X~Poisson(timeout * lamda = %d * %04.4f)" % (1.0-poisson.cdf(poolsize, float(lmbd) * timeout), timeout, lmbd))
         return t 
     
     def poolExhaustionEx(self, natA, timeout):
@@ -1904,11 +1908,11 @@ class NatSimulation(object):
                 if (N % 10000) == 0:
                     freePorts = natA.trulyFreePorts(t)
                     freeRatio = freePorts / float(natA.poolLen)
-                    print "New event will occur: " + str(t) + ("; now events: %02d; evt=%05.3f; freePorts=%d, %02.2f %%" % (N, nextEvt, freePorts, freeRatio))
+                    print("New event will occur: " + str(t) + ("; now events: %02d; evt=%05.3f; freePorts=%d, %02.2f %%" % (N, nextEvt, freePorts, freeRatio)))
             
-        except Exception, e:
-            print "Port pool will be exhausted in %05.3f ms = %05.3f s = %05.3f min = %05.3f h" % (t, t/1000.0, t/1000.0/60, t/1000.0/60/60)
-            print "Exception: ", e
+        except Exception as e:
+            print("Port pool will be exhausted in %05.3f ms = %05.3f s = %05.3f min = %05.3f h" % (t, t/1000.0, t/1000.0/60, t/1000.0/60/60))
+            print("Exception: ", e)
             pass
         
         return 0
@@ -1929,7 +1933,7 @@ class NatSimulation(object):
         
         while (lmbdL==-1) or (lmbdR==-1):
             probc = 1.0 - poisson.cdf(poolsize, lmbd * timeout)
-            print "current lambda: %02.3f ; prob=%02.3f" % (lmbd, probc)
+            print("current lambda: %02.3f ; prob=%02.3f" % (lmbd, probc))
             
             # left side of the interval. If fits, set and continue to find right side, otherwise keep left 
             if lmbdL==-1:
@@ -1948,7 +1952,7 @@ class NatSimulation(object):
             else:
                 lmbd = lmbd * 2.0
         
-        print "Interval found: [%02.03f, %02.03f]" % (lmbdL, lmbdR)
+        print("Interval found: [%02.03f, %02.03f]" % (lmbdL, lmbdR))
         return self.getLambdaExhaustionCDFinterval(timeout, poolsize, prob, lmbdL, lmbdR)
         
     def getLambdaExhaustionCDFinterval(self, timeout, poolsize, prob, l, r):
@@ -1957,7 +1961,7 @@ class NatSimulation(object):
             c = (l+r)/2
             probc = 1.0 - poisson.cdf(poolsize, c * timeout)
             
-            print "\nNew iteration [%02.03f, %02.03f]; c=%02.3f probc=%02.3f vs. prob=%02.3f" % (l, r, c, probc, prob)
+            print("\nNew iteration [%02.03f, %02.03f]; c=%02.3f probc=%02.3f vs. prob=%02.3f" % (l, r, c, probc, prob))
             
             if probc >= (prob-eps) and probc <= (prob+eps): break 
             if probc < prob: l = c
@@ -1977,7 +1981,7 @@ class NatSimulation(object):
         lmbdR=-1
         
         while (lmbdL==-1) or (lmbdR==-1):
-            print "current lambda: %02.3f" % lmbd
+            print("current lambda: %02.3f" % lmbd)
             t = self.poolExhaustion(timeout, poolsize, lmbd)
             
             # left side of the interval. If fits, set and continue to find right side, otherwise keep left 
@@ -1997,7 +2001,7 @@ class NatSimulation(object):
             else:
                 lmbd = lmbd * 2.0
         
-        print "Interval found: [%02.03f, %02.03f]" % (lmbdL, lmbdR)
+        print("Interval found: [%02.03f, %02.03f]" % (lmbdL, lmbdR))
         return self.getLambdaExhaustionInterval(timeout, poolsize, lmbdL, lmbdR)
         
     def getLambdaExhaustionInterval(self, timeout, poolsize, lmbdL, lmbdR):
@@ -2008,7 +2012,7 @@ class NatSimulation(object):
         t   = 0
         while lmbdL < lmbdR and (lmbdR - lmbdL) > 0.00001:
             
-            print "\nNew iteration [%02.03f, %02.03f]" % (lmbdL, lmbdR)
+            print("\nNew iteration [%02.03f, %02.03f]" % (lmbdL, lmbdR))
             cLmbd = (lmbdL+lmbdR) / 2.0
             t = self.poolExhaustion(timeout, poolsize, cLmbd)
             
@@ -2110,15 +2114,15 @@ class NatSimulation(object):
             sn += 1 
         pass
         lmbdStr = ('%01.4f' % lmbd).replace('.', '_')
-        print "Data sampling done..."
+        print("Data sampling done...")
         
         # Histogram & statistics for whole process
         #self.histAndStatisticsPortDistrib(portDistrib, iterations, ports, 'distrib/total_%s_%03d.pdf' % (lmbdStr, t))
     
         # Histogram & statistics for particular interesting ports
         for step in portDistribSteps:
-            print "\n", "="*80
-            print "Step %03d" % step
+            print("\n", "="*80)
+            print("Step %03d" % step)
             self.histAndStatisticsPortDistrib(portDistribSteps[step], iterations, ports, 'distrib/step_%s_%03d__%04d.png' % (lmbdStr, t, step), drawHist=True, step=step)
     
     def histAndStatisticsPortDistrib(self, portDistrib, iterations, ports, fname=None, histWidth=None, drawHist=False, step=-1, dist=None):
@@ -2131,8 +2135,8 @@ class NatSimulation(object):
         # Compute basic statistics
         #
         (ssum, ex, var, stdev) = self.calcPortDistribInfo(portDistrib, iterations)
-        print "E[x] = %04.2f;  V[x] = %04.2f;  stddev = %04.2f;  sum=%05d; Distribution:" % (ex, var, stdev, ssum)
-        print "totalp=", sum([i/float(iterations) for i in portDistrib])
+        print("E[x] = %04.2f;  V[x] = %04.2f;  stddev = %04.2f;  sum=%05d; Distribution:" % (ex, var, stdev, ssum))
+        print("totalp=", sum([i/float(iterations) for i in portDistrib]))
         #print "dist=[",(" ".join([ '%04d=%01.5f, %s' % (i, i/float(iterations), "\n" if (p % 40) == 39 else '') for p, i in enumerate(portDistrib)])),"]"
         
         #
@@ -2142,8 +2146,8 @@ class NatSimulation(object):
         #
         (chi1, pval1, m1) = self.goodMatchPoisson(ex, portDistrib, ports, iterations, shift=0)
         rr1               = self.pearsonCorelation(m1, portDistrib)
-        print "Chi-Squared test on match with Po(%s):     Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-            (('%04.4f' % ex).zfill(8), ('%04.4f' % chi1).zfill(10), pval1, "is REJECTED" if pval1 < 0.05 else "holds      ", rr1)
+        print("Chi-Squared test on match with Po(%s):     Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+            (('%04.4f' % ex).zfill(8), ('%04.4f' % chi1).zfill(10), pval1, "is REJECTED" if pval1 < 0.05 else "holds      ", rr1))
             
         #
         # Try to approximate with poisson distribution and binomial distribution
@@ -2154,32 +2158,32 @@ class NatSimulation(object):
             l2 = ex-step
             (chi2, pval2, m2) = self.goodMatchPoisson(l2, portDistrib, ports, iterations, shift=int(step * (-1)))
             rr2               = self.pearsonCorelation(m2, portDistrib)
-            print "Chi-Squared test on match with Po(%s):     Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-                (('%04.4f' % (l2)).zfill(8), ('%04.4f' % chi2).zfill(10), pval2, "is REJECTED" if pval2 < 0.05 else "holds      ", rr2)#
+            print("Chi-Squared test on match with Po(%s):     Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+                (('%04.4f' % (l2)).zfill(8), ('%04.4f' % chi2).zfill(10), pval2, "is REJECTED" if pval2 < 0.05 else "holds      ", rr2))#
         elif var < ex:
             l2 = var
             (chi2, pval2, m2) = self.goodMatchPoisson(l2, portDistrib, ports, iterations, shift=int((ex-var) * (-1)))
             rr2               = self.pearsonCorelation(m2, portDistrib)
-            print "Chi-Squared test on match with Po(%s)s:    Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-                (('%04.4f' % (l2)).zfill(8), ('%04.4f' % chi2).zfill(10), pval2, "is REJECTED" if pval2 < 0.05 else "holds      ", rr2)#
+            print("Chi-Squared test on match with Po(%s)s:    Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+                (('%04.4f' % (l2)).zfill(8), ('%04.4f' % chi2).zfill(10), pval2, "is REJECTED" if pval2 < 0.05 else "holds      ", rr2))#
            
         # Binomial distribution - may be handy on port distribution functions in a particular step. 
         (chi3, pval3, n3, p3, m3) = self.goodMatchBinomial(ex, var, portDistrib, ports, iterations, wiseBinning=True)
         rr3                       = self.pearsonCorelation(m3, portDistrib)
-        print "Chi-Squared test on match with Bi(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-            (n3, p3, ('%04.4f' % chi3).zfill(10), pval3, "is REJECTED" if pval3 < 0.05 else "holds      ", rr3)        
+        print("Chi-Squared test on match with Bi(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+            (n3, p3, ('%04.4f' % chi3).zfill(10), pval3, "is REJECTED" if pval3 < 0.05 else "holds      ", rr3))        
 
         # Negative binomial try - for real data from netflow
         (chi4, pval4, n4, p4, m4) = self.goodMatchNegativeBinomial(ex, var, portDistrib, ports, iterations, False, wiseBinning=True)
         rr4                       = self.pearsonCorelation(m4, portDistrib)
-        print "Chi-Squared test on match with NB(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-            (n4, p4, ('%04.4f' % chi4).zfill(10), pval4, "is REJECTED" if pval4 < 0.05 else "holds      ", rr4)
+        print("Chi-Squared test on match with NB(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+            (n4, p4, ('%04.4f' % chi4).zfill(10), pval4, "is REJECTED" if pval4 < 0.05 else "holds      ", rr4))
         
         # Nefative binomial - MLE for parameters
         (chi5, pval5, n5, p5, m5, par5) = self.goodMatchNegativeBinomialMLE(portDistrib, ports, iterations, False, wiseBinning=True)
         rr5                             = self.pearsonCorelation(m5, portDistrib)
-        print "Chi-Squared test on match with NB(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
-            (n5, p5, ('%04.4f' % chi5).zfill(10), pval5, "is REJECTED" if pval5 < 0.05 else "holds      ", rr5)
+        print("Chi-Squared test on match with NB(%04d, %04.4f): Chi: %s, p-value=%01.25f; alpha=0.05; hypothesis %s r=%01.8f" % \
+            (n5, p5, ('%04.4f' % chi5).zfill(10), pval5, "is REJECTED" if pval5 < 0.05 else "holds      ", rr5))
             
         #
         # Draw a histogram
@@ -2190,7 +2194,7 @@ class NatSimulation(object):
             
             ax = plt.axes()
             ax.set_xticks(pos + (width / 2))
-            ax.set_xticklabels(range(0, ports), rotation=90, size='xx-small')
+            ax.set_xticklabels(list(range(0, ports)), rotation=90, size='xx-small')
             
             plt.xlabel('port')
             plt.ylabel('frequency') #,rotation='horizontal')
@@ -2215,8 +2219,8 @@ class NatSimulation(object):
                     for fname_i in fname:
                         try:
                             plt.savefig(fname_i)
-                        except Exception,e:
-                            print "Error, cannot save to file %s Exception: " % fname_i, e
+                        except Exception as e:
+                            print("Error, cannot save to file %s Exception: " % fname_i, e)
                 else:
                     plt.savefig(fname)
                 plt.close()
@@ -2250,8 +2254,8 @@ class NatSimulation(object):
             numerator   = sum((nmodel-meanMod)*(nobs-meanObs)) 
             denumerator = math.sqrt(sum((nmodel-meanMod)**2)) * math.sqrt(sum((nobs-meanObs)**2))  
             return (numerator / denumerator) 
-        except Exception ,e:
-            print "Problem with computing correlation"
+        except Exception as e:
+            print("Problem with computing correlation")
             return 0.0
         
     def calcPortDistribInfo(self, portDistrib, iterations):
@@ -2376,8 +2380,8 @@ class NatSimulation(object):
         try:
             x = IntVector(obsArray)
             params = MASS.fitdistr(x, 'negative binomial')
-        except Exception, e:
-            print "Problem, exception here", e
+        except Exception as e:
+            print("Problem, exception here", e)
             return (0, 0, 0, 0, [0 for i in observed], params)
         
         n = (params[0][0])
@@ -2421,7 +2425,7 @@ class NatSimulation(object):
         bothGt5 = list(set(idxExGt5) & set(idxObsGt5))
         bothGt5.sort()
         if bothGt5 == None or len(bothGt5)<3:
-            if verbose: print "Warning! too few matching indices: %d" % len(bothGt5)
+            if verbose: print("Warning! too few matching indices: %d" % len(bothGt5))
             return (0.0,0.0)
         
         # expected values having counts higher-and-equal than 5
@@ -2434,9 +2438,9 @@ class NatSimulation(object):
             obsTest, expTest = self.unimodalWiseBinning(observed, expected, True)
         
         if verbose:
-            print "matching both:\n", bothGt5
-            print "expected: \n", expTest
-            print "observed: \n", obsTest
+            print("matching both:\n", bothGt5)
+            print("expected: \n", expTest)
+            print("observed: \n", obsTest)
         
         # perform chi-squared test on distribution
         return chisquare(np.array(obsTest), f_exp=np.array(expTest), ddof=0)
@@ -2517,10 +2521,10 @@ class NatSimulation(object):
         # First guess is poisson distribution shifted to the right: f(x - 1, lmbd * T)
         f1 = [0.0]
         f1.extend([poisson.pmf(i, lmbd*T) for i in range(0, self.errors)])  
-        prevDistrib = dict(zip(range(len(f1)), f1)) 
+        prevDistrib = dict(list(zip(list(range(len(f1))), f1))) 
         for r in range(1, self.errors):
-            print "="*120
-            print "Round %04d; prev guess %d" % (r, g[r-1])
+            print("="*120)
+            print("Round %04d; prev guess %d" % (r, g[r-1]))
             
             #
             # Compute current probability distribution
@@ -2531,11 +2535,11 @@ class NatSimulation(object):
             # f(g[r-1]) = 0.
             # Done by scaling - multiply each remaining element by 1 / (1 - f(g[r-1]))
             if not (g[r-1] in prevDistrib): prevDistrib[g[r-1]] = 0.0 # set to zero in p. distrib if does not exist
-            prevDistribCond = dict( [(i, prevDistrib[i] / (1.0 - prevDistrib[g[r-1]])) if i!=g[r-1] else (i, 0.0) for i in prevDistrib.keys()] )
+            prevDistribCond = dict( [(i, prevDistrib[i] / (1.0 - prevDistrib[g[r-1]])) if i!=g[r-1] else (i, 0.0) for i in list(prevDistrib.keys())] )
             
             # Sanity check - sum previous distribution, should be close to 1
             prevSum = sum([prevDistribCond[i] for i in prevDistribCond])
-            print "Sum on condition: ", prevSum
+            print("Sum on condition: ", prevSum)
             
             # Compute current conditional distribution P(C_i = x) with law of total probability:
             # P(C_i = x) = \sum_{y} P(C_i = x | C_{i-1} = y) * P(C_{i-1} = y)
@@ -2586,19 +2590,19 @@ class NatSimulation(object):
             # Since duplicities are not allowed, remove values from g
             # from probability distribution
             for cg in g:
-                print " removing cg=%d from distrib" % cg
+                print(" removing cg=%d from distrib" % cg)
                 if not (cg in curDistrib): curDistrib[cg] = 0.0 # set to zero in p. distrib if does not exist
-                curDistrib = dict( [(i, curDistrib[i] / (1.0 - curDistrib[cg])) if i!=cg else (i, 0.0) for i in curDistrib.keys()] )
+                curDistrib = dict( [(i, curDistrib[i] / (1.0 - curDistrib[cg])) if i!=cg else (i, 0.0) for i in list(curDistrib.keys())] )
                 
             # Self-check
             prevSum = sum([curDistrib[i] for i in curDistrib])
-            print "Sum on condition: ", prevSum
+            print("Sum on condition: ", prevSum)
                 
             # Find maximal element in prob. distribution
             for x in curDistrib:
                 if maxIdx==-1 or curDistrib[x] > curDistrib[maxIdx]: maxIdx = x
             
-            print "Move[%d] = %d" % (r, maxIdx) 
+            print("Move[%d] = %d" % (r, maxIdx)) 
             
             # Select new move - maximizing probability distribution
             g.append(maxIdx)
@@ -2731,14 +2735,14 @@ class NatSimulation(object):
                 matchesr[3].append(len(gInOrd))
             #print "Round %04d; Co matched=%03d; total=%1.5f inOrd=%03d" % (r, len(gMatch), len(gMatch)/float(self.errors), gInOrd) #, "matches: ", gMatch
         
-        print "Coefficient:", coe(lmbd*T)
-        print "Total"
-        print [(i, np.median(k)) for i,k in enumerate(matchesd) if len(k)>0]
-        print matched
+        print("Coefficient:", coe(lmbd*T))
+        print("Total")
+        print([(i, np.median(k)) for i,k in enumerate(matchesd) if len(k)>0])
+        print(matched)
         
-        print "In order"
-        print [(i, np.median(k)) for i,k in enumerate(matchesr) if len(k)>0]
-        print matcher
+        print("In order")
+        print([(i, np.median(k)) for i,k in enumerate(matchesr) if len(k)>0])
+        print(matcher)
         
         #print "Bgraph"
         #P.grid(True)
@@ -2747,13 +2751,13 @@ class NatSimulation(object):
         #graph(plt)
             
         for i in range(0,0):
-            print "I=%d; total match" % i
+            print("I=%d; total match" % i)
             P.grid(True)
             P.Figure()
             P.hist(matchN[i], 2000, normed=0, histtype='bar')
             graph(plt)
             
-            print "I=%d; in-order match" % i
+            print("I=%d; in-order match" % i)
             P.grid(True)
             P.Figure()
             P.hist(matchI[i], 2000, normed=0, histtype='bar')
@@ -2834,18 +2838,18 @@ if __name__ == "__main__":
     # Port pool exhaustion computation
     #
     if args.exhaust:
-        print "="*80
-        print "Computing port pool exhaustion\n"
-        print ns.poolExhaustionNat(natA, 3*60*1000)
+        print("="*80)
+        print("Computing port pool exhaustion\n")
+        print(ns.poolExhaustionNat(natA, 3*60*1000))
         
-        print "="*80
-        print "Computing lambda value that will cause NAT port pool exhaustion at some point..."
+        print("="*80)
+        print("Computing lambda value that will cause NAT port pool exhaustion at some point...")
         lmbd = ns.getLambdaExhaustion(natA)
-        print "\nLambda that will exhaust given NAT: ", lmbd
+        print("\nLambda that will exhaust given NAT: ", lmbd)
        
-        print "="*80
-        print "Computing lambda exhaustion value with probability=%01.3f" % args.exhaust_p
-        print ns.getLambdaExhaustionCDF(natA, args.exhaust_p)
+        print("="*80)
+        print("Computing lambda exhaustion value with probability=%01.3f" % args.exhaust_p)
+        print(ns.getLambdaExhaustionCDF(natA, args.exhaust_p))
 
     
     #
@@ -2866,7 +2870,7 @@ if __name__ == "__main__":
         
         
         # Process output to nicely looking graph
-        x = np.array(range(0,out['n']))
+        x = np.array(list(range(0,out['n'])))
         
         # e,x
         ex = np.array([d[0] for d in out['sd']])
@@ -2909,15 +2913,15 @@ if __name__ == "__main__":
     # Computes port distribution function for given NAT and parameters.
     #
     if args.pdistrib:
-        ns.portDistributionFunction(args.lmbd, args.space, range(1,180), [])
-        print "Port distribution done..."
+        ns.portDistributionFunction(args.lmbd, args.space, list(range(1,180)), [])
+        print("Port distribution done...")
     
     #
     # Poisson process estimators simulation
     #
     if args.proc:
         ns.processEstimator(rounds=args.rounds)
-        print "Process estimation done..."
+        print("Process estimation done...")
     
     #
     # Netflow benchmark
@@ -2927,27 +2931,27 @@ if __name__ == "__main__":
         pathDesc = "_".join(os.path.abspath(args.nfdump_sorted).split('/')[-2:])
         fname    = pathDesc + '_bench.txt'
         f = open(fname, 'a+')
-        print "Dumping to file name: ", fname
+        print("Dumping to file name: ", fname)
         
         # Iterate for T and strategies, only for sorted, sorry
         TArr = [10]
         SArr = ['their', 'i2j', 'poisson', 'simple']
         for T in TArr:
-            print "="*80
+            print("="*80)
             for S in SArr:
                 ns.portScanInterval = T
                 strategies=[getStrategy(S,0), getStrategy(S,0)]
                 strategies[0].init(None)
                 strategies[1].init(None)
                 
-                print "S=%s T=%d" % (S, T)
+                print("S=%s T=%d" % (S, T))
                 ns.compact = args.verbose == 0
                 
                 res = ns.nfSimulation(natA, natB, strategies[0], strategies[1], processedNfdump=args.nfdump_sorted, homeNet=args.hostnet, filt=args.filter, recEachSkip=args.eachskip, maxBlock=args.maxblock)
                 f.write("%03.4f|%03.4f|%03.4f|%03.4f\n" % (ns.lmbd, ns.portScanInterval, res[0], res[2])) # python will convert \n to os.linesep
                 f.flush()
                 
-                print "%03.4f|%03.4f|%03.4f|%03.4f\n" % (ns.lmbd, ns.portScanInterval, res[0], res[2])
+                print("%03.4f|%03.4f|%03.4f|%03.4f\n" % (ns.lmbd, ns.portScanInterval, res[0], res[2]))
                     
         f.close()
         
@@ -2963,7 +2967,7 @@ if __name__ == "__main__":
         
         gc.collect()    # garbage collection is really needed...
         f.write("New start at %s; scanInterval=%d; strategy=%s file=[%s]\n" % (time.time(), ns.portScanInterval, args.strategy, args.output))
-        print "Scanning port interval: %d" % ns.portScanInterval
+        print("Scanning port interval: %d" % ns.portScanInterval)
         
         # Construct lambda array to search in
         lmbdArr = []
@@ -2975,16 +2979,16 @@ if __name__ == "__main__":
         # benchmarking NAT traversal algorithm on different lambdas
         #
         lmbdArr = list(set(lmbdArr))    # duplicity removal, round on 4 decimal places
-        lmbdArr = filter(lambda x: x >= args.lmbd_start or args.lmbd_start==-1, lmbdArr)
+        lmbdArr = [x for x in lmbdArr if x >= args.lmbd_start or args.lmbd_start==-1]
         lmbdArr.sort()                  # sort - better user intuition
-        print "="*80
-        print "Lambdas that will be benchmarked: \n", (", ".join(['%04.3f' % i for i in lmbdArr]))
-        print "="*80
+        print("="*80)
+        print("Lambdas that will be benchmarked: \n", (", ".join(['%04.3f' % i for i in lmbdArr])))
+        print("="*80)
         
         for clmb in lmbdArr:
             res = []
             mem = getMem()
-            print "# Current lambda: %03.4f; Avg silent period: %04.4f; Mem: %04.2f MB" % (clmb, clmb * (ns.silentPeriodBase + ns.silentPeriodlmbd), mem)
+            print("# Current lambda: %03.4f; Avg silent period: %04.4f; Mem: %04.2f MB" % (clmb, clmb * (ns.silentPeriodBase + ns.silentPeriodlmbd), mem))
             if args.lmbd_start!=-1 and clmb < args.lmbd_start: continue
             
             ns.lmbd = clmb
@@ -2996,8 +3000,8 @@ if __name__ == "__main__":
                     res = ns.simulation(natA, natB, strategies[0])
                     f.write("%03.4f|%03.4f|%03.4f|%03.4f\n" % (ns.lmbd, ns.portScanInterval, res[0], res[2])) # python will convert \n to os.linesep
                 f.flush()
-            except Exception, e:
-                print "Exception!", e
+            except Exception as e:
+                print("Exception!", e)
         f.close()
         #ns.simulateThem()
     pass
